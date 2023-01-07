@@ -11,7 +11,7 @@ from sklearn.decomposition import PCA
 
 from util import transfer_letter_to_num, cal_m_auc
 from loader import customDataset, DataLoader
-from net import CNN, train
+from net import CNN, train, test
 
 warnings.filterwarnings('ignore')
 
@@ -47,21 +47,36 @@ label_test_500 = np.array(f_mat_test_500.X.todense()).astype(np.int_)
 mat_train_500 = transfer_letter_to_num(train_500)
 mat_test_500 = transfer_letter_to_num(test_500)
 
-device = 'cpu'
-max_epoch = 50
-batch_size = 128
-lr = .001
-wd = 1e-4
+
+max_epoch = 20
+batch_size = 256
+lr = 1e-4
+wd = 5e-4
+device = 'cuda'
+
 
 train_dataset = customDataset(mat_train_500, label_train_500)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+test_dataset = customDataset(mat_test_500, label_test_500)
+test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 net = CNN(k=500).to(device)
-cri = nn.BCELoss()
+cri = nn.BCELoss().to(device)
 opt = optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
 
 loss_list = train(net, train_loader, cri, opt, device, max_epoch)
+
+
 plt.plot(loss_list)
 plt.show(block=True)
+
+
+pred = test(net, train_loader, label_train_500, device)
+cal_m_auc(pred, label_train_500)
+pred_test = test(net, test_loader, label_test_500, device)
+cal_m_auc(pred_test, label_test_500)
+
+clus_data = net.linear_block[3].weight.cpu().detach().numpy()
+clus_data = clus_data.reshape(2000, -1)
 
 
 cell_str = ''.join(cell)
@@ -77,9 +92,6 @@ cell_str = cell_str.replace('pDC', '7')
 cell_str = cell_str.replace('UNK', '8')
 cell_str = cell_str.replace('mono', '9')
 cell_int = np.array([int(s) for s in cell_str])
-
-clus_path = './clus_data.npy'
-clus_data = np.load(clus_path)
 
 
 clus_k = KMeans(n_clusters=10)
