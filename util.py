@@ -19,9 +19,12 @@ def transfer_letter_to_num(data):
     return res
 
 
-def cal_m_auc(pred, label):
+def cal_auc(pred, label):
     res = .0
+    res_list = []
     for idx in range(len(label)):
-        res += roc_auc_score(label[idx], pred[idx])
+        tmp = roc_auc_score(label[idx], pred[idx])
+        res += tmp
+        res_list.append(tmp)
     res /= len(label)
-    return res
+    return res_list, res

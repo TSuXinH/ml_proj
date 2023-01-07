@@ -1,7 +1,6 @@
 import torch
 import numpy as np
 from torch import nn
-from util import cal_m_auc
 
 
 def create_conv_block(in_channels, out_channels, kernel_size, stride):
@@ -16,8 +15,8 @@ class CNN(nn.Module):
     def __init__(self, k):
         super().__init__()
         stride = 1 if k == 500 else 2 if k == 1000 else 3
-        self.conv_block1 = create_conv_block(4, 64, 5, stride)  # shape: [n, 64, 496]
-        self.conv_block2 = create_conv_block(64, 128, 4, 4)  # shape: [n, 128, 124]
+        self.conv_block1 = create_conv_block(4, 64, 1, stride)  # shape: [n, 64, 500]
+        self.conv_block2 = create_conv_block(64, 128, 7, 4)  # shape: [n, 128, 124]
         self.conv_block3 = create_conv_block(128, 256, 5, 4)  # shape: [n, 256, 30]
         self.conv_block4 = create_conv_block(256, 512, 5, 4)  # shape: [n, 512, 7]
         self.linear_block = nn.Sequential(
