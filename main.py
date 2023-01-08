@@ -12,9 +12,9 @@ from sklearn.decomposition import PCA
 from torch.utils.data import DataLoader
 from sklearn.metrics import adjusted_mutual_info_score, normalized_mutual_info_score
 
-from util import transfer_letter_to_num, cal_auc
+from util import transfer_letter_to_num, cal_auc, clean_str
 from loader import CustomDataset
-from net import CNN, train, test, AlternativeCNN, AlternativeCNN1
+from net import CNN, train, test, AlternativeCNN, AlternativeCNN1, AlternativeCNN2, get_conv_map, get_motif
 
 warnings.filterwarnings('ignore')
 
@@ -47,8 +47,9 @@ label_train_500 = np.array(f_mat_train_500.X.todense()).astype(np.int_)
 f_mat_test_500 = sc.read('./data/test/500/matrix_test.mtx')
 label_test_500 = np.array(f_mat_test_500.X.todense()).astype(np.int_)
 
-mat_train_500 = transfer_letter_to_num(train_500)
-mat_test_500 = transfer_letter_to_num(test_500)
+mat_train_500, int_train_500 = transfer_letter_to_num(train_500)
+mat_test_500, int_test_500 = transfer_letter_to_num(test_500)
+str_test_500 = clean_str(test_500)
 
 
 max_epoch = 30
@@ -62,7 +63,7 @@ train_dataset = CustomDataset(mat_train_500, label_train_500)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_dataset = CustomDataset(mat_test_500, label_test_500)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-net = AlternativeCNN(k=500).to(device)
+net = AlternativeCNN2().to(device)
 cri = nn.BCELoss().to(device)
 opt = optim.RAdam(net.parameters(), lr=lr, weight_decay=wd)
 
@@ -74,14 +75,14 @@ plt.title('training loss via epoch')
 plt.show(block=True)
 
 
-pred = test(net, test_loader, label_test_500, device)
+pred = test(net, test_loader, device)
 auc_list, auc = cal_auc(pred, label_test_500)
 
 plt.hist(auc_list, bins=50)
 plt.title('auc distribution')
 plt.show(block=True)
 
-clus_data = net.linear_block[4].weight.cpu().detach().numpy()
+clus_data = net.linear_block[3].weight.cpu().detach().numpy()
 clus_data = clus_data.reshape(2000, -1)
 
 
@@ -122,3 +123,7 @@ plt.show(block=True)
 
 ami = adjusted_mutual_info_score(cell_int, clus_res)
 nmi = normalized_mutual_info_score(cell_int, clus_res)
+
+
+f_map = get_conv_map(net, test_loader, device)
+res_str, res_int = get_motif(f_map, .2, str_test_500, int_test_500, 9, 3)
