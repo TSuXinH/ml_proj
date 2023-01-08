@@ -10,10 +10,11 @@ from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from torch.utils.data import DataLoader
+from sklearn.metrics import adjusted_mutual_info_score, normalized_mutual_info_score
 
 from util import transfer_letter_to_num, cal_auc
 from loader import CustomDataset
-from net import CNN, train, test
+from net import CNN, train, test, AlternativeCNN, AlternativeCNN1
 
 warnings.filterwarnings('ignore')
 
@@ -61,9 +62,9 @@ train_dataset = CustomDataset(mat_train_500, label_train_500)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_dataset = CustomDataset(mat_test_500, label_test_500)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-net = CNN(k=500).to(device)
+net = AlternativeCNN(k=500).to(device)
 cri = nn.BCELoss().to(device)
-opt = optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
+opt = optim.RAdam(net.parameters(), lr=lr, weight_decay=wd)
 
 loss_list = train(net, train_loader, cri, opt, device, max_epoch)
 
@@ -80,7 +81,7 @@ plt.hist(auc_list, bins=50)
 plt.title('auc distribution')
 plt.show(block=True)
 
-clus_data = net.linear_block[3].weight.cpu().detach().numpy()
+clus_data = net.linear_block[4].weight.cpu().detach().numpy()
 clus_data = clus_data.reshape(2000, -1)
 
 
@@ -108,16 +109,16 @@ for item in range(np.max(cell_int)+1):
     print(item, np.argmax(np.bincount(clus_res[index])))
     res_list.append(clus_res[index])
 
-tsne = TSNE(n_components=2, perplexity=10, learning_rate='auto')
+tsne = TSNE(n_components=2, perplexity=30, learning_rate='auto')
 dim_rdc_res = tsne.fit_transform(clus_data)
-# u = umap.UMAP()
-# dim_rdc_res = u.fit_transform(clus_data)
 
 
 for item in range(np.max(clus_res) + 1):
     index = np.where(cell_int == item)[0]
     tmp_cell = dim_rdc_res[index]
-    plt.scatter(tmp_cell[:, 0], tmp_cell[:, 1], label=item, s=8)
+    plt.scatter(tmp_cell[:, 0], tmp_cell[:, 1], label=item, s=10)
 plt.legend()
 plt.show(block=True)
 
+ami = adjusted_mutual_info_score(cell_int, clus_res)
+nmi = normalized_mutual_info_score(cell_int, clus_res)
