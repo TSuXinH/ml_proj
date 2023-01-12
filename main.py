@@ -78,12 +78,15 @@ plt.show(block=True)
 pred = test(net, test_loader, device)
 auc_list, auc = cal_auc(pred, label_test_500)
 
-plt.hist(auc_list, bins=50)
+
+""" start """
+auc_array = np.load('./auc_array_500.npy')
+plt.hist(auc_array, bins=50)
 plt.title('auc distribution')
 plt.show(block=True)
 
-clus_data = net.linear_block[3].weight.cpu().detach().numpy()
-clus_data = clus_data.reshape(2000, -1)
+# clus_data = net.linear_block[3].weight.cpu().detach().numpy()
+# clus_data = clus_data.reshape(2000, -1)
 
 
 cell_str = ''.join(cell)
@@ -100,30 +103,30 @@ cell_str = cell_str.replace('UNK', '8')
 cell_str = cell_str.replace('mono', '9')
 cell_int = np.array([int(s) for s in cell_str])
 
+clus_data = np.load('./clus_data_500.npy')
 
 clus_k = KMeans(n_clusters=10)
 clus_res = clus_k.fit_predict(clus_data)
 
-res_list = []
-for item in range(np.max(cell_int)+1):
-    index = np.where(cell_int == item)[0]
-    print(item, np.argmax(np.bincount(clus_res[index])))
-    res_list.append(clus_res[index])
 
-tsne = TSNE(n_components=2, perplexity=30, learning_rate='auto')
+tsne = TSNE(n_components=2, perplexity=10, learning_rate='auto')
 dim_rdc_res = tsne.fit_transform(clus_data)
+# u = umap.UMAP()
+# dim_rdc_res = u.fit_transform(clus_data)
 
 
 for item in range(np.max(clus_res) + 1):
     index = np.where(cell_int == item)[0]
     tmp_cell = dim_rdc_res[index]
-    plt.scatter(tmp_cell[:, 0], tmp_cell[:, 1], label=item, s=10)
+    plt.scatter(tmp_cell[:, 0], tmp_cell[:, 1], label=item, s=8)
 plt.legend()
 plt.show(block=True)
 
-ami = adjusted_mutual_info_score(cell_int, clus_res)
-nmi = normalized_mutual_info_score(cell_int, clus_res)
+import torch
+x = torch.zeros(10, 4, 1000)
+self_conv1 = nn.Conv1d(4, 32, kernel_size=(9,), stride=(2,))  # shape: [n, 32, 496]
+self_b = nn.BatchNorm1d(32)
+self_g = nn.GELU()
+self_p = nn.MaxPool1d(3, 3)  # shape: [n, 32, 164]
 
-
-f_map = get_conv_map(net, test_loader, device)
-res_str, res_int = get_motif(f_map, .2, str_test_500, int_test_500, 9, 3)
+y = self_p(self_g(self_b(self_conv1(x))))

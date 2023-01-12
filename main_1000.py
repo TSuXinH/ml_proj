@@ -11,9 +11,10 @@ from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from torch.utils.data import DataLoader
 
-from util import transfer_letter_to_num, cal_auc
+from util import transfer_letter_to_num, cal_auc, clean_str
 from loader import CustomDataset
-from net import CNN, train, test
+from net import CNN, train, test, AlternativeCNN, AlternativeCNN1, AlternativeCNN2, get_conv_map, get_motif
+
 
 warnings.filterwarnings('ignore')
 
@@ -46,9 +47,9 @@ label_train_1000 = np.array(f_mat_train_1000.X.todense()).astype(np.int_)
 f_mat_test_1000 = sc.read('./data/test/1000/matrix_test.mtx')
 label_test_1000 = np.array(f_mat_test_1000.X.todense()).astype(np.int_)
 
-mat_train_1000 = transfer_letter_to_num(train_1000)
-mat_test_1000 = transfer_letter_to_num(test_1000)
-
+mat_train_1000, int_train_1000 = transfer_letter_to_num(train_1000)
+mat_test_1000, int_test_1000 = transfer_letter_to_num(test_1000)
+str_test_1000 = clean_str(test_1000)
 
 max_epoch = 30
 batch_size = 256
@@ -73,15 +74,18 @@ plt.title('training loss via epoch')
 plt.show(block=True)
 
 
-pred = test(net, test_loader, label_test_1000, device)
+pred = test(net, test_loader, device)
 auc_list, auc = cal_auc(pred, label_test_1000)
 
-plt.hist(auc_list, bins=50)
+
+""" start """
+auc_array = np.load('./auc_array_1000.npy')
+plt.hist(auc_array, bins=50)
 plt.title('auc distribution')
 plt.show(block=True)
 
-clus_data = net.linear_block[3].weight.cpu().detach().numpy()
-clus_data = clus_data.reshape(2000, -1)
+# clus_data = net.linear_block[3].weight.cpu().detach().numpy()
+# clus_data = clus_data.reshape(2000, -1)
 
 
 cell_str = ''.join(cell)
@@ -98,6 +102,7 @@ cell_str = cell_str.replace('UNK', '8')
 cell_str = cell_str.replace('mono', '9')
 cell_int = np.array([int(s) for s in cell_str])
 
+clus_data = np.load('./clus_data_1000.npy')
 
 clus_k = KMeans(n_clusters=10)
 clus_res = clus_k.fit_predict(clus_data)
